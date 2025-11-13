@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>WIGYRO32 — Pastel Rehab Arcade</title>
+<style>
+  :root{
+    --bg1:#f7f9fc;
+    --mint:#c9f1ea;
+    --peach:#ffdada;
+    --lav:#e9d8ff;
+    --accent:#9ad3c8;
+    --muted:#6b7280;
+    --card:#ffffffee;
+    --glass: rgba(255,255,255,0.6);
+    --modal-bg: rgba(16,28,40,0.06);
+  }
+  *{box-sizing:border-box;font-family: 'Poppins', system-ui, sans-serif; }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#f8fbff,#fffaf6);-webkit-font-smoothing:antialiased;}
+  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px;}
+  .app {
+    width:980px; max-width:98%; background:linear-gradient(180deg,#ffffffef,#fffdfb);
+    border-radius:20px; padding:22px; box-shadow:0 20px 40px rgba(18,38,63,0.07);
+    position:relative; overflow:hidden;
+  }
+
+  /* header */
+  header{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .logo{width:62px;height:62px;border-radius:14px;background:linear-gradient(135deg,var(--mint),var(--lav));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#234; font-size:22px; box-shadow:0 6px 18px rgba(153,153,153,0.08);}
+  h1{font-size:26px;margin:0;color:#10323a;line-height:1}
+  p.lead{margin:2px 0 0;color:var(--muted);font-size:14px}
+
+  /* layout */
+  .layout{display:grid;grid-template-columns:320px 1fr; gap:18px;align-items:start}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr} }
+
+  /* left menu card */
+  .card { background:var(--card); border-radius:14px; padding:16px; box-shadow:0 8px 20px rgba(17,34,50,0.04); }
+  .games-list{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+  .game-item{
+    display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:12px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.7));
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .game-item:hover{ transform:translateY(-6px); box-shadow:0 10px 25px rgba(18,38,63,0.06); }
+  .meta{display:flex;gap:12px;align-items:center}
+  .icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+  .icon.apple{background:linear-gradient(135deg,#ffdede,#ffd4d4)}
+  .icon.bird{background:linear-gradient(135deg,#dff7f0,#d7f0ff)}
+  .title{font-weight:700;color:#10323a}
+  .sub{font-size:13px;color:var(--muted)}
+
+  .controls{display:flex;gap:8px;align-items:center}
+
+  /* main stage */
+  .stage { min-height:520px; display:flex;flex-direction:column; gap:12px; }
+  .stage .card{ padding:14px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; position:relative; }
+
+  /* canvas container */
+  .canvas-wrap{position:relative; width:100%; display:flex;flex-direction:column;align-items:center}
+  canvas{border-radius:12px; width:780px; max-width:100%; height:460px; background:linear-gradient(#f0fbff,#fef8ff); box-shadow:0 18px 40px rgba(16,44,60,0.06); border:6px solid rgba(255,255,255,0.6);}
+
+  /* hud */
+  .hud{display:flex;gap:10px;margin-top:10px;align-items:center;justify-content:center}
+  .pill{background:linear-gradient(180deg,white, #ffffffee); padding:10px 18px;border-radius:999px;box-shadow:0 6px 18px rgba(15,35,55,0.05);font-weight:700;color:#14464f}
+
+  /* exit + sound */
+  .floating-btn{position:absolute;top:18px;right:18px;padding:10px 14px;border-radius:12px;border:none;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,0.08)}
+  .exit{background:linear-gradient(135deg,#ff98a4,#ff6f91);color:white}
+  .sound{left:18px;right:auto;background:linear-gradient(135deg,#d1f7e3,#bde7ff);color:#0a3b35; position:absolute; top:18px; left:18px; }
+
+  /* report */
+  .report{margin-top:12px;width:340px;border-radius:12px;padding:14px;background:linear-gradient(180deg,#fff,#fffbf8);box-shadow:0 10px 30px rgba(20,36,60,0.06);text-align:center}
+  .report h3{margin:0;color:#10323a}
+  .muted{color:var(--muted); font-size:13px;margin-top:8px}
+
+  /* Play again button */
+  .playagain{background:linear-gradient(135deg,#ffd4a3,#ffd4f0); color:#2b2b2b; padding:10px 16px;border-radius:12px;border:none;font-weight:700;cursor:pointer;margin-top:10px}
+
+  /* modal (soft pastel) */
+  .modal-backdrop{ position:fixed; inset:0; background:var(--modal-bg); display:flex; align-items:center; justify-content:center; z-index:60; opacity:0; pointer-events:none; transition:opacity .18s ease; }
+  .modal-backdrop.show{ opacity:1; pointer-events:all; }
+  .modal { width:360px; max-width:92%; background:linear-gradient(180deg,#fff,#fffaf2); border-radius:14px; box-shadow:0 12px 30px rgba(20,36,60,0.12); padding:18px; text-align:center; transform:translateY(8px) scale(.98); transition:transform .18s ease, opacity .18s ease; }
+  .modal-backdrop.show .modal { transform:translateY(0) scale(1); }
+  .modal h3{ margin:6px 0 4px 0; color:#10323a; }
+  .modal p { margin:8px 0 14px 0; color:var(--muted); font-size:15px; }
+  .modal .btns{ display:flex; gap:10px; justify-content:center; }
+  .modal .btn { padding:10px 16px; border-radius:10px; border:none; cursor:pointer; font-weight:700; }
+  .modal .ok { background:linear-gradient(135deg,#d1f7e3,#bde7ff); color:#0a3b35; }
+  .modal .cont { background:linear-gradient(135deg,#ffd4a3,#ffd4f0); color:#2b2b2b; }
+
+  /* small helpers */
+  .hidden{display:none}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="app">
+      <header>
+        <div class="logo">W</div>
+        <div>
+          <h1>WIGYRO32</h1>
+          <p class="lead">Gentle exercises for hand tremor</p>
+        </div>
+      </header>
+
+      <div class="layout">
+        <!-- LEFT MENU -->
+        <aside class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:800;color:#10323a">Games</div>
+              <div style="font-size:12px;color:var(--muted)">Choose a game and set duration/speed</div>
+            </div>
+            <div style="font-size:12px;color:var(--muted)">v1.0</div>
+          </div>
+
+          <div class="games-list">
+            <div class="game-item">
+              <div class="meta">
+                <div class="icon apple">🍎</div>
+                <div>
+                  <div class="title">Apple Catcher</div>
+                  <div class="sub">Catch apples using cursor — coordination</div>
+                </div>
+              </div>
+              <div class="controls">
+                <button class="play pastel" onclick="startAppleCatcher()">Play</button>
+              </div>
+            </div>
+
+            <div class="game-item">
+              <div class="meta">
+                <div class="icon bird">🐦</div>
+                <div>
+                  <div class="title">Bird Flyer</div>
+                  <div class="sub">Guide the bird through wide gaps</div>
+                </div>
+              </div>
+              <div class="controls">
+                <button class="play pastel" onclick="startBirdFlyer()">Play</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;font-size:13px;color:var(--muted)">
+            Tip: Use slow speed for new users. Click Exit to stop early.
+          </div>
+        </aside>
+
+        <!-- RIGHT STAGE -->
+        <main class="stage card">
+          <!-- APPLE STAGE -->
+          <div id="appleStage" class="hidden" style="width:100%;display:flex;flex-direction:column;align-items:center">
+            <button id="appleSoundBtn" class="floating-btn sound" onclick="toggleSound()">🔊 On</button>
+            <button id="appleExitBtn" class="floating-btn exit" onclick="exitAppleGame()" style="display:none">Exit</button>
+            <div class="canvas-wrap">
+              <canvas id="appleCanvas" width="780" height="460"></canvas>
+              <div class="hud">
+                <div id="appleScore" class="pill">Score: 0</div>
+                <div id="appleTimer" class="pill">Time: 0s</div>
+              </div>
+            </div>
+
+            <div id="appleReport" class="report hidden">
+              <h3>🍎 Session Complete</h3>
+              <div id="appleFinalScore" style="font-weight:800;margin-top:8px">Score: 0</div>
+              <div id="appleFinalTime" class="muted">Duration: 0s</div>
+              <button class="playagain" onclick="playAppleAgain()">Play Again</button>
+              <button class="playagain" style="margin-left:8px" onclick="backHome()">Home</button>
+            </div>
+          </div>
+
+          <!-- BIRD STAGE -->
+          <div id="birdStage" class="hidden" style="width:100%;display:flex;flex-direction:column;align-items:center">
+            <button id="birdSoundBtn" class="floating-btn sound" onclick="toggleSound()">🔊 On</button>
+            <button id="birdExitBtn" class="floating-btn exit" onclick="exitBirdGame()" style="display:none">Exit</button>
+            <div class="canvas-wrap">
+              <canvas id="birdCanvas" width="780" height="460"></canvas>
+              <div class="hud">
+                <div id="birdScore" class="pill">Score: 0</div>
+                <div id="birdTimer" class="pill">Time: 0s</div>
+              </div>
+            </div>
+
+            <div id="birdReport" class="report hidden">
+              <h3>🐦 Session Complete</h3>
+              <div id="birdFinalScore" style="font-weight:800;margin-top:8px">Score: 0</div>
+              <div id="birdFinalTime" class="muted">Duration: 0s</div>
+              <button class="playagain" onclick="playBirdAgain()">Play Again</button>
+              <button class="playagain" style="margin-left:8px" onclick="backHome()">Home</button>
+            </div>
+          </div>
+
+          <!-- default placeholder -->
+          <div id="welcome" style="text-align:center">
+            <img alt="cute" src="" style="width:160px;height:160px;border-radius:16px;display:block;margin:10px auto 6px auto;opacity:0.01">
+            <h2 style="margin-top:2px;color:#234">Welcome to Wigyro32</h2>
+            <p class="muted">Pick a game from the left. Controls are mouse movement. Set time & speed and start.</p>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal (soft pastel) -->
+  <div id="endModalBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Nice!</h3>
+      <p id="modalText">You did great — keep going!</p>
+      <div style="font-weight:800;color:#10323a;margin-bottom:10px" id="modalScore"></div>
+      <div class="btns">
+        <button class="btn ok" id="modalOkBtn">OK</button>
+        <button class="btn cont" id="modalContinueBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ----------------------
+   Sound helper (tiny beeps)
+   ---------------------- */
+let soundOn = true;
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function ensureAudio(){
+  if(!audioCtx){ audioCtx = new AudioCtx(); }
+}
+function beep(freq=660,dur=0.06,vol=0.02){
+  if(!soundOn) return;
+  try{
+    ensureAudio();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.value = vol;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start();
+    setTimeout(()=>{ o.stop(); }, dur*1000);
+  }catch(e){}
+}
+function toggleSound(){
+  soundOn = !soundOn;
+  document.getElementById('appleSoundBtn').textContent = soundOn ? '🔊 On' : '🔈 Off';
+  document.getElementById('birdSoundBtn').textContent = soundOn ? '🔊 On' : '🔈 Off';
+}
+
+/* ----------------------
+   Modal helpers
+   ---------------------- */
+const modalBackdrop = document.getElementById('endModalBackdrop');
+const modalTitle = document.getElementById('modalTitle');
+const modalText = document.getElementById('modalText');
+const modalScore = document.getElementById('modalScore');
+const modalOkBtn = document.getElementById('modalOkBtn');
+const modalContinueBtn = document.getElementById('modalContinueBtn');
+
+let modalCurrentGame = null; // 'apple' or 'bird'
+
+function showEndModal(game, score){
+  modalCurrentGame = game;
+  modalBackdrop.classList.remove('hidden');
+  setTimeout(()=> modalBackdrop.classList.add('show'), 10);
+  if(game === 'apple'){
+    modalTitle.textContent = '🍎 You caught them!';
+    modalText.textContent = 'You caught them all! Great reflexes — you\'re improving each time!';
+  } else {
+    modalTitle.textContent = '🕊️ You flew great!';
+    modalText.textContent = 'You flew great! Steady hands and focus — that\'s the way!';
+  }
+  modalScore.textContent = 'Final Score: ' + score;
+  // focus for accessibility
+  modalOkBtn.focus();
+}
+
+function hideEndModal(){
+  modalBackdrop.classList.remove('show');
+  setTimeout(()=> modalBackdrop.classList.add('hidden'), 220);
+  modalCurrentGame = null;
+}
+
+// OK: just close modal and stay on same stage
+modalOkBtn.addEventListener('click', ()=>{
+  hideEndModal();
+});
+
+// Continue: close modal and return to arcade main layout (both game cards visible)
+modalContinueBtn.addEventListener('click', ()=>{
+  hideEndModal();
+  // ensure both games are stopped & UI reset
+  stopAppleFully();
+  stopBirdFully();
+  backHome();
+});
+
+/* ----------------------
+   Shared helpers
+   ---------------------- */
+function backHome(){
+  // hide all stages and show welcome
+  document.getElementById('appleStage').classList.add('hidden');
+  document.getElementById('birdStage').classList.add('hidden');
+  document.getElementById('welcome').style.display = 'block';
+  document.getElementById('appleReport').classList.add('hidden');
+  document.getElementById('birdReport').classList.add('hidden');
+  // hide exit buttons
+  document.getElementById('appleExitBtn').style.display='none';
+  document.getElementById('birdExitBtn').style.display='none';
+}
+function showStage(id){
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById(id).classList.remove('hidden');
+}
+
+/* =========================
+   APPLE CATCHER (pastel + calm)
+   ========================= */
+const aCanvas = document.getElementById('appleCanvas');
+const aCtx = aCanvas.getContext('2d');
+let appleState = {
+  running:false, apples:[], score:0, timerId:null, spawnId:null, tickId:null, duration:30, speed:2, basketW:120, basketX:0
+};
+
+function startAppleCatcher(){
+  // prompts
+  let duration = parseInt(prompt('Enter duration (seconds):','30'));
+  if(isNaN(duration) || duration<5) duration = 30;
+  let speed = parseInt(prompt('Choose fall speed: 1=slow  2=med  3=fast','2'));
+  if(isNaN(speed) || speed<1) speed = 2;
+  appleState.duration = Math.max(5, Math.min(600,duration));
+  appleState.speed = (speed===1?1.3: speed===3?3.2 : 2.1);
+
+  // show stage
+  backHome();
+  document.getElementById('appleStage').classList.remove('hidden');
+  document.getElementById('appleExitBtn').style.display='block';
+  document.getElementById('appleReport').classList.add('hidden');
+  document.getElementById('appleScore').textContent = 'Score: 0';
+  document.getElementById('appleTimer').textContent = 'Time: '+appleState.duration+'s';
+
+  // init
+  appleState.running = true;
+  appleState.apples = [];
+  appleState.score = 0;
+
+  // spawn apples slower for calmness
+  appleState.spawnId = setInterval(()=>{
+    if(Math.random() < 0.9){
+      appleState.apples.push({ x: 60 + Math.random()*(aCanvas.width-120), y:-20, r:12 + Math.random()*3, speed: appleState.speed + Math.random()*0.6 });
+    }
+  }, 900);
+
+  // timer
+  let remaining = appleState.duration;
+  appleState.timerId = setInterval(()=>{
+    remaining--;
+    document.getElementById('appleTimer').textContent = 'Time: '+remaining+'s';
+    if(remaining<=0){ endApple(); }
+  },1000);
+
+  // mouse control
+  aCanvas.addEventListener('mousemove', appleMouse);
+
+  // render loop
+  function loop(){
+    if(!appleState.running) return;
+    // clear with soft gradient
+    const g = aCtx.createLinearGradient(0,0,aCanvas.width,aCanvas.height);
+    g.addColorStop(0,'#fffefc'); g.addColorStop(1,'#ffeef6');
+    aCtx.fillStyle = g;
+    aCtx.fillRect(0,0,aCanvas.width,aCanvas.height);
+
+    // draw ground strip
+    aCtx.fillStyle = '#f6e7f2';
+    aCtx.fillRect(0,aCanvas.height-80,aCanvas.width,80);
+
+    // apples
+    for(let i = appleState.apples.length-1; i>=0; i--){
+      const ap = appleState.apples[i];
+      ap.y += ap.speed;
+      // glow circle
+      aCtx.beginPath();
+      const glow = aCtx.createRadialGradient(ap.x,ap.y,1,ap.x,ap.y,ap.r*2);
+      glow.addColorStop(0,'rgba(255,206,210,0.9)');
+      glow.addColorStop(1,'rgba(255,165,170,0.03)');
+      aCtx.fillStyle = glow;
+      aCtx.arc(ap.x,ap.y,ap.r*1.6,0,Math.PI*2); aCtx.fill();
+      // apple body
+      aCtx.beginPath();
+      aCtx.fillStyle = '#ff6b81';
+      aCtx.arc(ap.x,ap.y,ap.r,0,Math.PI*2); aCtx.fill();
+      // leaf
+      aCtx.fillStyle = '#7cc394';
+      aCtx.beginPath(); aCtx.ellipse(ap.x+ap.r*0.6,ap.y-ap.r*0.6,ap.r*0.5,ap.r*0.25, -0.6,0,Math.PI*2); aCtx.fill();
+
+      // check catch
+      if(ap.y > aCanvas.height - 96 && ap.x > appleState.basketX && ap.x < appleState.basketX + appleState.basketW){
+        appleState.score++;
+        beep(880,0.04,0.02);
+        appleState.apples.splice(i,1);
+        document.getElementById('appleScore').textContent = 'Score: '+appleState.score;
+      } else if(ap.y > aCanvas.height + 50){
+        // remove missed apples quietly
+        appleState.apples.splice(i,1);
+      }
+    }
+
+    // draw basket (rounded)
+    aCtx.save();
+    const bx = appleState.basketX || (aCanvas.width/2 - (appleState.basketW/2));
+    aCtx.fillStyle = '#6a3a3a';
+    roundRect(aCtx, bx, aCanvas.height-80, appleState.basketW, 18, 8, true, false);
+    aCtx.fillStyle = '#ffd9d9';
+    roundRect(aCtx, bx+6, aCanvas.height-72, appleState.basketW-12, 12, 6, true, false);
+    aCtx.restore();
+
+    requestAnimationFrame(loop);
+  }
+  appleState.basketW = 120;
+  appleState.basketX = (aCanvas.width - appleState.basketW)/2;
+  loop();
+}
+
+// stop apple fully (clear everything)
+function stopAppleFully(){
+  appleState.running = false;
+  try{ clearInterval(appleState.spawnId); }catch(e){}
+  try{ clearInterval(appleState.timerId); }catch(e){}
+  aCanvas.removeEventListener('mousemove', appleMouse);
+  appleState.spawnId = null; appleState.timerId = null;
+}
+
+// helper roundRect
+function roundRect(ctx, x, y, w, h, r, fill, stroke){
+  if (typeof r === 'undefined') r = 5;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y,   x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h,   x, y, r);
+  ctx.arcTo(x, y,   x + w, y, r);
+  ctx.closePath();
+  if(fill) ctx.fill();
+  if(stroke) ctx.stroke();
+}
+
+function appleMouse(e){
+  const rect = aCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  appleState.basketX = Math.max(12, Math.min(aCanvas.width - appleState.basketW - 12, mx - appleState.basketW/2));
+}
+
+function endApple(){
+  // stop game, show modal with score
+  stopAppleFully();
+  document.getElementById('appleFinalScore').textContent = 'Score: '+appleState.score;
+  document.getElementById('appleFinalTime').textContent = 'Duration: '+appleState.duration+'s';
+  // show the small report area as before (kept)
+  document.getElementById('appleReport').classList.remove('hidden');
+  document.getElementById('appleExitBtn').style.display='none';
+  // show the modal with motivational line + score
+  showEndModal('apple', appleState.score);
+}
+
+function exitAppleGame(){
+  // stop but don't navigate away — show modal so user can OK or Continue
+  stopAppleFully();
+  document.getElementById('appleFinalScore').textContent = 'Score: '+appleState.score;
+  document.getElementById('appleFinalTime').textContent = 'Duration: '+appleState.duration+'s';
+  document.getElementById('appleReport').classList.remove('hidden');
+  document.getElementById('appleExitBtn').style.display='none';
+  showEndModal('apple', appleState.score);
+}
+function playAppleAgain(){
+  document.getElementById('appleReport').classList.add('hidden');
+  startAppleCatcher();
+}
+
+/* =======================
+   BIRD FLYER (cute pastel)
+   ======================= */
+const bCanvas = document.getElementById('birdCanvas');
+const bCtx = bCanvas.getContext('2d');
+let birdState = { running:false, pillars:[], score:0, timerId:null, spawnId:null, duration:30, speed:1.3, birdY: bCanvas.height/2 };
+
+function startBirdFlyer(){
+  let duration = parseInt(prompt('Enter duration (seconds):','30'));
+  if(isNaN(duration) || duration<5) duration = 30;
+  let s = parseInt(prompt('Choose speed: 1=slow 2=med 3=fast','2'));
+  let speed = (s===1?0.9 : s===3?2.1 : 1.3);
+  birdState.duration = Math.max(5,Math.min(600,duration));
+  birdState.speed = speed;
+
+  backHome();
+  document.getElementById('birdStage').classList.remove('hidden');
+  document.getElementById('birdExitBtn').style.display='block';
+  document.getElementById('birdReport').classList.add('hidden');
+  document.getElementById('birdScore').textContent = 'Score: 0';
+  document.getElementById('birdTimer').textContent = 'Time: '+birdState.duration+'s';
+
+  birdState.running = true; birdState.pillars = []; birdState.score=0; birdState.birdY = bCanvas.height/2;
+
+  // spawn pillars
+  birdState.spawnId = setInterval(()=>{
+    const gap = 190; // large safe gap
+    const top = 40 + Math.random()*(bCanvas.height - gap - 120);
+    birdState.pillars.push({ x: bCanvas.width + 10, top: top, gap: gap, w: 64, passed:false });
+  }, 1700);
+
+  // timer
+  let remaining = birdState.duration;
+  birdState.timerId = setInterval(()=>{
+    remaining--;
+    document.getElementById('birdTimer').textContent = 'Time: '+remaining+'s';
+    if(remaining<=0) endBird();
+  },1000);
+
+  bCanvas.addEventListener('mousemove', birdMouse);
+  (function loop(){
+    if(!birdState.running) return;
+    // sky bg
+    bCtx.clearRect(0,0,bCanvas.width,bCanvas.height);
+    const sky = bCtx.createLinearGradient(0,0,0,bCanvas.height);
+    sky.addColorStop(0,'#fff7fe'); sky.addColorStop(1,'#e7fbff');
+    bCtx.fillStyle = sky; bCtx.fillRect(0,0,bCanvas.width,bCanvas.height);
+
+    // gentle clouds
+    drawClouds(bCtx);
+
+    // draw pillars
+    for(let i = birdState.pillars.length-1;i>=0;i--){
+      const p = birdState.pillars[i];
+      bCtx.fillStyle = '#c9f1ea';
+      roundRect(bCtx, p.x, 0, p.w, p.top, 12, true, false);
+      roundRect(bCtx, p.x, p.top + p.gap, p.w, bCanvas.height - (p.top + p.gap), 12, true, false);
+      p.x -= birdState.speed * 2;
+      if(!p.passed && p.x + p.w < 100){
+        p.passed = true; birdState.score++; beep(880,0.05,0.02);
+        document.getElementById('birdScore').textContent = 'Score: '+birdState.score;
+      }
+      if(p.x + p.w < -20) birdState.pillars.splice(i,1);
+    }
+
+    // draw bird
+    bCtx.save();
+    const by = birdState.birdY;
+    const bx = 100;
+    const g = bCtx.createRadialGradient(bx-4,by-4,2,bx,by,24);
+    g.addColorStop(0,'#fff2cc'); g.addColorStop(1,'#ffd1e3');
+    bCtx.fillStyle = g;
+    bCtx.beginPath(); bCtx.arc(bx,by,18,0,Math.PI*2); bCtx.fill();
+    bCtx.fillStyle = 'rgba(255,255,255,0.7)';
+    bCtx.beginPath(); bCtx.ellipse(bx-8,by,8,4, -0.6,0,Math.PI*2); bCtx.fill();
+    bCtx.restore();
+
+    requestAnimationFrame(loop);
+  })();
+}
+
+// stop bird fully
+function stopBirdFully(){
+  birdState.running = false;
+  try{ clearInterval(birdState.spawnId); }catch(e){}
+  try{ clearInterval(birdState.timerId); }catch(e){}
+  bCanvas.removeEventListener('mousemove', birdMouse);
+  birdState.spawnId = null; birdState.timerId = null;
+}
+
+function birdMouse(e){
+  const r = bCanvas.getBoundingClientRect();
+  birdState.birdY = Math.max(24, Math.min(bCanvas.height-24, e.clientY - r.top));
+}
+
+function drawClouds(ctx){
+  // simple pastel puffy clouds that drift (stateless in this simple impl)
+  const clouds = [{x:80,y:70,r:36, vx:0.25}, {x:280,y:50,r:50, vx:0.18}, {x:560,y:100,r:32, vx:0.2}];
+  for(let c of clouds){
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.ellipse(c.x, c.y, c.r, c.r*0.6, 0, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+function endBird(){
+  stopBirdFully();
+  document.getElementById('birdFinalScore').textContent = 'Score: '+birdState.score;
+  document.getElementById('birdFinalTime').textContent = 'Duration: '+birdState.duration+'s';
+  document.getElementById('birdReport').classList.remove('hidden');
+  document.getElementById('birdExitBtn').style.display='none';
+  showEndModal('bird', birdState.score);
+}
+
+function exitBirdGame(){
+  stopBirdFully();
+  document.getElementById('birdFinalScore').textContent = 'Score: '+birdState.score;
+  document.getElementById('birdFinalTime').textContent = 'Duration: '+birdState.duration+'s';
+  document.getElementById('birdReport').classList.remove('hidden');
+  document.getElementById('birdExitBtn').style.display='none';
+  showEndModal('bird', birdState.score);
+}
+function playBirdAgain(){
+  document.getElementById('birdReport').classList.add('hidden');
+  startBirdFlyer();
+}
+
+/* initial UI */
+backHome();
+toggleSound(); // sync buttons
+</script>
+</body>
+</html>
